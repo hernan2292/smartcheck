@@ -1,0 +1,11 @@
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+pydantic==2.11.9
+httpx==0.28.1
+
+# Analisis estatico
+slither-analyzer==0.11.3
+solc-select==1.1.0
+
+# Solo necesario con PUBLISHER=mcp
+mcp==1.16.0

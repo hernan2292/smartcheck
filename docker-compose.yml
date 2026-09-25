@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # SQLite persistente: sin esto perdes los audits en cada deploy
+      - smartcheck-data:/srv/data
+    # El codigo pegado por el usuario se compila adentro del contenedor.
+    # Estos limites son el sandbox del MVP (spec 5.8).
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+volumes:
+  smartcheck-data:
