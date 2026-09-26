@@ -13,8 +13,22 @@ def _flag(name: str, default: str = "0") -> bool:
 # --- App ---------------------------------------------------------------------
 DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "data" / "smartcheck.db"))
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+# Regex de origenes permitidos, para cubrir un subdominio que todavia no conoces
+# (ej. cualquier sitio de Webflow: ^https://[a-z0-9-]+\.webflow\.io$).
+# Se combina con CORS_ORIGINS: alcanza con que matchee uno de los dos.
+CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", "").strip()
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "2"))
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+
+# --- Rate limiting -----------------------------------------------------------
+# Los audits son lo caro: cada uno arranca un Slither. Los GET son lecturas de
+# SQLite, el techo esta alto a proposito porque el frontend hace polling.
+RATE_LIMIT_ENABLED = _flag("RATE_LIMIT_ENABLED", "1")
+RATE_AUDITS_PER_IP = int(os.getenv("RATE_AUDITS_PER_IP", "5"))
+RATE_AUDITS_GLOBAL = int(os.getenv("RATE_AUDITS_GLOBAL", "20"))
+RATE_AUDITS_WINDOW = int(os.getenv("RATE_AUDITS_WINDOW", "600"))
+RATE_READS_PER_IP = int(os.getenv("RATE_READS_PER_IP", "300"))
+RATE_READS_WINDOW = int(os.getenv("RATE_READS_WINDOW", "60"))
 
 # --- Analisis ----------------------------------------------------------------
 SLITHER_TIMEOUT = int(os.getenv("SLITHER_TIMEOUT", "120"))

@@ -18,12 +18,13 @@ import re
 from contextlib import asynccontextmanager
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from . import config, db, report, worker
+from .ratelimit import SlidingWindow
 from .taxonomy import CATEGORIES, OWASP_SCS_VERSION
 
 logging.basicConfig(
@@ -56,10 +57,77 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
+    # Permite un subdominio que todavia no existe (ej. tu sitio de Webflow) sin
+    # tener que saber el nombre exacto de antemano.
+    allow_origin_regex=config.CORS_ORIGIN_REGEX or None,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+# --- Rate limiting -----------------------------------------------------------
+
+_audit_limiter = SlidingWindow(
+    config.RATE_AUDITS_PER_IP, config.RATE_AUDITS_WINDOW, "audits-por-ip"
+)
+_audit_global_limiter = SlidingWindow(
+    config.RATE_AUDITS_GLOBAL, config.RATE_AUDITS_WINDOW, "audits-global"
+)
+_read_limiter = SlidingWindow(
+    config.RATE_READS_PER_IP, config.RATE_READS_WINDOW, "lecturas-por-ip"
+)
+
+
+def _client_ip(request: Request) -> str:
+    """IP del cliente.
+
+    Detras de nginx, uvicorn tiene que arrancar con --proxy-headers y
+    --forwarded-allow-ips para que reescriba esto desde X-Forwarded-For. Sin esos
+    flags todas las requests parecen venir del proxy y comparten un solo cupo.
+    """
+    return request.client.host if request.client else "desconocido"
+
+
+def _reject(retry_after: float, detail: str) -> HTTPException:
+    return HTTPException(
+        status_code=429,
+        detail=detail,
+        headers={"Retry-After": str(int(retry_after))},
+    )
+
+
+def limit_audits(request: Request) -> None:
+    """Techo para los endpoints que arrancan un Slither."""
+    if not config.RATE_LIMIT_ENABLED:
+        return
+
+    wait = _audit_global_limiter.hit("global")
+    if wait is not None:
+        log.warning("Rate limit global alcanzado (%s)", _client_ip(request))
+        raise _reject(
+            wait,
+            "El servicio esta recibiendo demasiados analisis en este momento. "
+            f"Volvé a intentar en {int(wait)} segundos.",
+        )
+
+    wait = _audit_limiter.hit(_client_ip(request))
+    if wait is not None:
+        raise _reject(
+            wait,
+            f"Llegaste al limite de {config.RATE_AUDITS_PER_IP} analisis cada "
+            f"{config.RATE_AUDITS_WINDOW // 60} minutos. "
+            f"Volvé a intentar en {int(wait)} segundos.",
+        )
+
+
+def limit_reads(request: Request) -> None:
+    """Techo laxo para las lecturas: el frontend hace polling cada 2.5s."""
+    if not config.RATE_LIMIT_ENABLED:
+        return
+    wait = _read_limiter.hit(_client_ip(request))
+    if wait is not None:
+        raise _reject(wait, "Demasiadas consultas seguidas. Esperá unos segundos.")
 
 
 # --- Schemas -----------------------------------------------------------------
@@ -146,7 +214,7 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "publisher": config.PUBLISHER, "owasp": OWASP_SCS_VERSION}
 
 
-@app.get("/api/networks")
+@app.get("/api/networks", dependencies=[Depends(limit_reads)])
 def networks() -> dict[str, Any]:
     return {
         "default": config.DEFAULT_NETWORK,
@@ -157,7 +225,7 @@ def networks() -> dict[str, Any]:
     }
 
 
-@app.get("/api/taxonomy")
+@app.get("/api/taxonomy", dependencies=[Depends(limit_reads)])
 def taxonomy() -> dict[str, Any]:
     """Las 10 categorias sin datos de audit — alimenta el modo explorar (UC3)."""
     return {
@@ -166,7 +234,7 @@ def taxonomy() -> dict[str, Any]:
     }
 
 
-@app.post("/api/audits", status_code=202)
+@app.post("/api/audits", status_code=202, dependencies=[Depends(limit_audits)])
 def create_address_audit(payload: AddressAuditRequest) -> dict[str, Any]:
     if not payload.force:
         cached = db.find_cached_verified(payload.network, payload.address)
@@ -181,7 +249,7 @@ def create_address_audit(payload: AddressAuditRequest) -> dict[str, Any]:
     return {**_public_view(audit), "cached": False}
 
 
-@app.post("/api/audits/source", status_code=202)
+@app.post("/api/audits/source", status_code=202, dependencies=[Depends(limit_audits)])
 def create_source_audit(payload: SourceAuditRequest) -> dict[str, Any]:
     audit = db.create_audit(
         network=payload.network, source_type="pasted", source_code=payload.source_code
@@ -190,24 +258,24 @@ def create_source_audit(payload: SourceAuditRequest) -> dict[str, Any]:
     return _public_view(audit)
 
 
-@app.get("/api/audits")
+@app.get("/api/audits", dependencies=[Depends(limit_reads)])
 def list_audits(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
     return {"audits": db.list_audits(limit)}
 
 
-@app.get("/api/audits/{audit_id}")
+@app.get("/api/audits/{audit_id}", dependencies=[Depends(limit_reads)])
 def get_audit(audit_id: str) -> dict[str, Any]:
     return _public_view(_require(db.get_audit(audit_id)))
 
 
-@app.get("/api/audits/{audit_id}/raw")
+@app.get("/api/audits/{audit_id}/raw", dependencies=[Depends(limit_reads)])
 def get_raw(audit_id: str) -> dict[str, Any]:
     """JSON crudo de Slither, para debug y para el futuro UC6 (comparar versiones)."""
     audit = _require(db.get_audit(audit_id))
     return {"id": audit["id"], "raw_slither_output": audit["raw_slither_output"]}
 
 
-@app.get("/api/audits/{audit_id}/export")
+@app.get("/api/audits/{audit_id}/export", dependencies=[Depends(limit_reads)])
 def export_audit(
     audit_id: str, format: Literal["md", "html"] = Query(default="md")
 ):
@@ -228,7 +296,7 @@ def export_audit(
     return HTMLResponse(report.to_html(audit, standalone=True))
 
 
-@app.get("/api/audits/share/{share_hash}")
+@app.get("/api/audits/share/{share_hash}", dependencies=[Depends(limit_reads)])
 def share_view(share_hash: str, format: str = Query(default="json")):
     """Vista publica read-only (UC5). Si Webflow esta activo, el link canonico es el suyo."""
     audit = _require(db.get_by_share_hash(share_hash))
