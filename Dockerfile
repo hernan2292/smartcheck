@@ -3,6 +3,9 @@
 # Node NO se instala por default: solo hace falta con PUBLISHER=mcp, porque el
 # Webflow MCP server es un paquete npm. Para activarlo, descomenta el bloque
 # marcado mas abajo y rebuildeá.
+#
+# Para un droplet chico (< 1GB RAM) conviene el deploy con systemd + venv en vez
+# de esta imagen: usa ~600MB menos de disco. Ver README > Deploy.
 
 FROM python:3.12-slim
 
@@ -27,22 +30,23 @@ WORKDIR /srv
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-instalamos el solc default para que el primer audit no pague la descarga
-RUN solc-select install ${SOLC_VERSION} && solc-select use ${SOLC_VERSION}
-
 # Usuario sin privilegios: el codigo pegado por el usuario se compila aca dentro
 # (sandboxing del spec, seccion 5.8)
 RUN useradd --create-home --shell /usr/sbin/nologin smartcheck \
     && mkdir -p /srv/data \
-    && cp -r /root/.solc-select /home/smartcheck/.solc-select \
-    && chown -R smartcheck:smartcheck /srv /home/smartcheck
+    && chown -R smartcheck:smartcheck /srv
 
 COPY --chown=smartcheck:smartcheck app ./app
 
 USER smartcheck
 ENV HOME=/home/smartcheck \
-    SOLC_SELECT_INSTALL_DIR=/home/smartcheck/.solc-select \
     DB_PATH=/srv/data/smartcheck.db
+
+# Pre-descarga del solc default para que el primer audit no pague la bajada.
+# Se usa download_solc() y no `solc-select install` a proposito: solc-select baja
+# con urllib y binaries.soliditylang.org responde 403 al User-Agent de Python.
+# Corre como smartcheck para que el artifact quede en su ~/.solc-select.
+RUN python -c "from app.analyzer import download_solc; download_solc('${SOLC_VERSION}')"
 
 EXPOSE 8000
 

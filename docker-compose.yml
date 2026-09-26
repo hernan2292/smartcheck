@@ -9,15 +9,18 @@ services:
     volumes:
       # SQLite persistente: sin esto perdes los audits en cada deploy
       - smartcheck-data:/srv/data
+
     # El codigo pegado por el usuario se compila adentro del contenedor.
     # Estos limites son el sandbox del MVP (spec 5.8).
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 2G
+
+    # Limites como claves top-level, no bajo `deploy:` — ahi solo aplican en
+    # modo Swarm. Ajustalos al tamaño real de tu droplet: el techo de memoria
+    # existe para que Slither no pueda tumbar la maquina entera.
+    cpus: 1.5
+    mem_limit: 1g
+    memswap_limit: 2g
 
 volumes:
   smartcheck-data:
