@@ -90,16 +90,27 @@ export const api = {
  * Devuelve una funcion de cancelacion para no dejar timers colgados si el
  * usuario arranca otro audit antes de que el anterior cierre.
  */
-export function pollAudit(id, { onUpdate, onDone, onError, intervalMs = 2500, maxMs = 300000 }) {
+/** Un fallo que probablemente se resuelva solo si reintentamos. */
+function isTransient(error) {
+  // 0 = red/CORS, 429 = rate limit, 5xx = el backend se esta recuperando
+  return error.status === 0 || error.status === 429 || error.status >= 500;
+}
+
+export function pollAudit(
+  id,
+  { onUpdate, onDone, onError, intervalMs = 2500, maxMs = 300000, maxFailures = 5 },
+) {
   const startedAt = Date.now();
   let cancelled = false;
   let timer = null;
+  let failures = 0;
 
   async function tick() {
     if (cancelled) return;
     try {
       const audit = await api.getAudit(id);
       if (cancelled) return;
+      failures = 0;
 
       onUpdate?.(audit);
 
@@ -117,7 +128,18 @@ export function pollAudit(id, { onUpdate, onDone, onError, intervalMs = 2500, ma
       }
       timer = setTimeout(tick, intervalMs);
     } catch (error) {
-      if (!cancelled) onError?.(error);
+      if (cancelled) return;
+
+      // El analisis ya esta corriendo en el backend: un 429 o un corte de red
+      // momentaneo no es razon para tirar la vista. Reintentamos con backoff y
+      // solo nos rendimos si falla varias veces seguidas.
+      failures += 1;
+      if (isTransient(error) && failures < maxFailures) {
+        const backoff = Math.min(intervalMs * 2 ** failures, 20000);
+        timer = setTimeout(tick, backoff);
+        return;
+      }
+      onError?.(error);
     }
   }
 

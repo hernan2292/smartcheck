@@ -24,8 +24,9 @@ index.html      # harness de dev local (no se despliega)
 
 ## Verlo funcionando ahora
 
-El backend ya está desplegado en `http://138.197.155.202:8000` y `index.html`
-apunta ahí por default. Solo hace falta servir esta carpeta:
+El backend está desplegado en `https://138.197.155.202.sslip.io` (HTTPS con cert
+de Let's Encrypt) y `index.html` apunta ahí por default. Solo hace falta servir
+esta carpeta:
 
 ```bash
 python -m http.server 5173 --bind 127.0.0.1
@@ -41,6 +42,9 @@ Para apuntar a otro backend sin editar nada, pasalo por query string:
 ```
 http://localhost:5173/?api=http://localhost:8000
 ```
+
+El puerto 8000 del droplet ya **no** es accesible desde afuera: uvicorn escucha
+solo en loopback y nginx hace de reverse proxy. Todo entra por HTTPS.
 
 `index.html` replica exactamente lo que hacen los snippets de Webflow, así que
 podés iterar sin publicar el sitio en cada cambio.
@@ -63,8 +67,9 @@ Webflow (funciona, pero perdés el poder actualizar con un `git push`).
 Webflow Designer → **Page Settings** → Custom Code → *Inside `<head>` tag*.
 Copiá [`webflow/head.html`](webflow/head.html) y reemplazá:
 
-- `TU-USUARIO/TU-REPO` → tu repo de GitHub
-- `https://api.tudominio.com` → la URL de tu backend
+- `TU-USUARIO/TU-REPO` → ya viene con `hernan2292/smartcheck`
+
+La URL del backend ya viene puesta y es HTTPS, así que no hay que tocar nada.
 
 ### 3. Pegar el embed en la página
 
@@ -88,14 +93,20 @@ https://cdn.jsdelivr.net/gh/TU-USUARIO/TU-REPO@v0.1.1/src/app.js
 
 ---
 
-## Dos cosas que te van a morder en el deploy
+## Lo que ya está resuelto del lado del backend
 
-**1. CORS.** El backend tiene que tener tu dominio de Webflow en `CORS_ORIGINS`.
-Si no, el navegador bloquea todo y la app muestra "no se pudo contactar el backend".
+**CORS.** El backend acepta cualquier `https://<algo>.webflow.io` por regex, así
+que publicar en Webflow funciona sin saber de antemano el nombre del sitio. Si le
+ponés un **dominio propio**, ese sí hay que agregarlo a `CORS_ORIGINS` en el
+`.env` del servidor.
 
-**2. HTTPS obligatorio.** Webflow sirve en HTTPS. Un backend en HTTP puro va a ser
-bloqueado por *mixed content* sin siquiera intentar la request. Poné Caddy adelante
-del backend (te resuelve el certificado solo) o usá el load balancer de DO.
+**HTTPS.** Resuelto con Let's Encrypt sobre `138.197.155.202.sslip.io` — un
+hostname que resuelve solo a la IP, así que no hizo falta ni un dominio propio ni
+tocar el DNS. Ya no hay riesgo de mixed content.
+
+**Rate limiting.** 5 análisis cada 10 minutos por IP. Si lo tocás, la app muestra
+el mensaje del backend con los segundos de espera; el polling de un audit en curso
+tolera un 429 y reintenta con backoff en vez de tirar la vista.
 
 ---
 
@@ -113,6 +124,9 @@ del backend (te resuelve el certificado solo) o usá el load balancer de DO.
   muestra un aviso.
 - **El polling se cancela.** Si arrancás un audit mientras otro está corriendo, el
   anterior se corta para que no pise el resultado.
+- **El polling tolera fallos transitorios.** Un 429 o un corte de red momentáneo
+  no descarta la vista: el análisis ya está corriendo en el backend, así que se
+  reintenta con backoff exponencial y solo se abandona tras 5 fallos seguidos.
 
 `taxonomy.js` es un **espejo** de `app/taxonomy.py` del branch `back`. Si cambia
 una, hay que cambiar la otra — hoy es manual y es la deuda técnica más obvia del

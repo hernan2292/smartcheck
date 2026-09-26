@@ -6,20 +6,18 @@
 
   QUE HACE: define la URL del backend y carga los estilos desde jsDelivr.
 
-  OJO CON EL HTTPS: Webflow sirve la pagina por HTTPS, y el navegador bloquea
-  por mixed content cualquier request a un backend HTTP — ni siquiera la intenta.
-  El backend desplegado hoy es:
+  El backend ya esta detras de HTTPS con cert de Let's Encrypt, asi que Webflow
+  lo puede llamar sin que el navegador lo bloquee por mixed content. El CORS del
+  backend ya acepta cualquier https://<algo>.webflow.io, asi que esto funciona
+  sin configurar nada mas.
 
-      http://138.197.155.202:8000     <-- HTTP, sirve para dev local, NO para Webflow
-
-  Antes de publicar en Webflow necesitas ese backend detras de HTTPS. Dos caminos
-  cortos: apuntar un subdominio al droplet y sacar un cert con Caddy o certbot, o
-  poner Cloudflare adelante. Despues reemplaza la URL de abajo por la https://.
+  Si despues le pones un dominio propio al sitio, hay que agregarlo a
+  CORS_ORIGINS en el .env del servidor (el regex solo cubre *.webflow.io).
 -->
 
 <script>
-  // URL del backend. Sin barra final. Tiene que ser HTTPS en produccion.
-  window.SMARTCHECK_API = "https://api.tudominio.com";
+  // URL del backend. Sin barra final.
+  window.SMARTCHECK_API = "https://138.197.155.202.sslip.io";
 </script>
 
 <link

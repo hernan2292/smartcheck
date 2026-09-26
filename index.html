@@ -16,7 +16,7 @@
       // En Webflow esto sale de webflow/head.html.
       // Aca se puede apuntar a otro backend por query string sin editar nada:
       //   http://localhost:5173/?api=http://localhost:8000
-      var BACKEND_DESPLEGADO = "http://138.197.155.202:8000";
+      var BACKEND_DESPLEGADO = "https://138.197.155.202.sslip.io";
       window.SMARTCHECK_API =
         new URLSearchParams(location.search).get("api") || BACKEND_DESPLEGADO;
     </script>
