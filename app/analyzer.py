@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -181,6 +182,43 @@ def _run(
     )
 
 
+def _scripts_dir() -> Path:
+    """Directorio de ejecutables del interprete actual (el bin/ del venv).
+
+    Ahi viven `slither` y el shim `solc` que instala solc-select. No se puede
+    confiar en el PATH heredado: systemd arranca el servicio con un PATH minimo
+    que no lo incluye.
+    """
+    return Path(sys.executable).parent
+
+
+def _find_executable(name: str) -> str:
+    candidate = _scripts_dir() / (f"{name}.exe" if os.name == "nt" else name)
+    if candidate.exists():
+        return str(candidate)
+    found = shutil.which(name)
+    if found:
+        return found
+    raise AnalysisError(
+        f"No se encontro el ejecutable '{name}'. "
+        f"Revisá que el entorno tenga instalado slither-analyzer."
+    )
+
+
+def _subprocess_env(version: str) -> dict[str, str]:
+    """Env para el subprocess de slither.
+
+    Dos cosas importan aca:
+    - SOLC_VERSION: solc-select la lee antes de su archivo global-version, asi que
+      la version viaja por el env en vez de mutar estado compartido con
+      `solc-select use` (que seria una race con MAX_WORKERS > 1).
+    - PATH: slither invoca `solc` por nombre, y ese shim esta en el bin del venv.
+    """
+    env = {**os.environ, "SOLC_VERSION": version}
+    env["PATH"] = os.pathsep.join([str(_scripts_dir()), env.get("PATH", "")]).rstrip(os.pathsep)
+    return env
+
+
 def _solc_platform() -> str:
     if sys.platform.startswith("linux"):
         return "linux-amd64"
@@ -294,17 +332,18 @@ def run_slither(sources: dict[str, str]) -> tuple[dict, str]:
 
         target = _pick_target(root, sources)
         cmd = [
-            "slither", str(target.relative_to(root)),
+            _find_executable("slither"), str(target.relative_to(root)),
             "--json", "-",
             "--solc-disable-warnings",
             "--no-fail-pedantic",
         ]
-        # solc-select lee SOLC_VERSION antes de su archivo global-version, asi que
-        # la version viaja en el env de este subprocess en vez de mutar estado
-        # compartido con `solc-select use`. Con varios workers eso seria una race.
-        env = {**os.environ, "SOLC_VERSION": version}
         try:
-            result = _run(cmd, timeout=config.SLITHER_TIMEOUT, cwd=str(root), env=env)
+            result = _run(
+                cmd,
+                timeout=config.SLITHER_TIMEOUT,
+                cwd=str(root),
+                env=_subprocess_env(version),
+            )
         except subprocess.TimeoutExpired as exc:
             raise AnalysisError(
                 f"Slither excedio el timeout de {config.SLITHER_TIMEOUT}s. "
