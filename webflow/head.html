@@ -1,26 +1,36 @@
 <!--
   SmartCheck — snippet para el <head>
+  ============================================================================
 
-  DONDE: Webflow Designer > Page Settings (o Site Settings para todo el sitio)
-         > Custom Code > Inside <head> tag
+  DONDE: Webflow Designer > Page Settings > Custom Code > Inside <head> tag
+         (o Site Settings > Custom Code si lo queres en todo el sitio)
 
-  QUE HACE: define la URL del backend y carga los estilos desde jsDelivr.
+  No hay nada que reemplazar. Pegalo tal cual.
 
-  El backend ya esta detras de HTTPS con cert de Let's Encrypt, asi que Webflow
-  lo puede llamar sin que el navegador lo bloquee por mixed content. El CORS del
-  backend ya acepta cualquier https://<algo>.webflow.io, asi que esto funciona
-  sin configurar nada mas.
+  Despues pega webflow/embed.html en un elemento Embed del body.
 
-  Si despues le pones un dominio propio al sitio, hay que agregarlo a
-  CORS_ORIGINS en el .env del servidor (el regex solo cubre *.webflow.io).
+  ---------------------------------------------------------------------------
+  Por que funciona sin configurar nada mas:
+
+  - El backend ya esta detras de HTTPS con cert de Let's Encrypt, asi que el
+    navegador no lo bloquea por mixed content.
+  - Su CORS acepta cualquier https://<algo>.webflow.io por regex, asi que no hace
+    falta saber de antemano el nombre de tu sitio.
+
+  Si le pones un DOMINIO PROPIO al sitio de Webflow, ese hay que agregarlo a
+  CORS_ORIGINS en el .env del servidor — el regex solo cubre *.webflow.io.
+  ---------------------------------------------------------------------------
 -->
 
 <script>
-  // URL del backend. Sin barra final.
+  // URL del backend, sin barra final.
+  // Si borras esta linea la app sigue andando: src/api.js tiene el mismo valor
+  // como default. Esta aca para que puedas apuntarla a otro backend sin tocar
+  // el repo.
   window.SMARTCHECK_API = "https://138.197.155.202.sslip.io";
 </script>
 
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@main/src/app.css"
+  href="https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.0/src/app.css"
 />

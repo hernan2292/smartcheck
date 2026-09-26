@@ -54,42 +54,50 @@ podés iterar sin publicar el sitio en cada cambio.
 ## Desplegar en Webflow
 
 Webflow no hostea archivos arbitrarios, así que la estrategia es: **el código se
-sirve desde jsDelivr (que lee tu repo de GitHub) y Webflow solo lo carga.**
+sirve desde jsDelivr (que lee este repo) y Webflow solo lo carga.** El repo es
+público, que es lo único que jsDelivr necesita.
 
-### 1. El repo tiene que ser público
+**No hay nada que reemplazar en los snippets.** El repo, la versión y la URL del
+backend ya vienen puestos.
 
-jsDelivr solo sirve repos públicos. Si el tuyo es privado, la alternativa es
-pegar el contenido de `app.css` y `app.js` directamente en los custom code de
-Webflow (funciona, pero perdés el poder actualizar con un `git push`).
-
-### 2. Pegar el snippet del `<head>`
+### 1. Pegar el `<head>`
 
 Webflow Designer → **Page Settings** → Custom Code → *Inside `<head>` tag*.
-Copiá [`webflow/head.html`](webflow/head.html) y reemplazá:
+Pegá [`webflow/head.html`](webflow/head.html) tal cual. Ahí van los estilos y la
+URL del backend.
 
-- `TU-USUARIO/TU-REPO` → ya viene con `hernan2292/smartcheck`
-
-La URL del backend ya viene puesta y es HTTPS, así que no hay que tocar nada.
-
-### 3. Pegar el embed en la página
+### 2. Pegar el embed
 
 Arrastrá un elemento **Embed** (Add panel → Components → Embed) donde quieras la
-app y pegá [`webflow/embed.html`](webflow/embed.html), reemplazando
-`TU-USUARIO/TU-REPO` igual que antes.
+app y pegá [`webflow/embed.html`](webflow/embed.html) tal cual.
 
-### 4. Publicar
+### 3. Publicar
 
-Publicá el sitio en Webflow. El `<div id="smartcheck-app">` se llena solo.
+Publicá el sitio. El `<div id="smartcheck-app">` se llena solo.
 
-### Actualizar después
+Funciona sin configurar nada más porque el backend ya está detrás de HTTPS (no hay
+mixed content) y su CORS acepta cualquier `https://<algo>.webflow.io` por regex
+(no hace falta saber de antemano el nombre del sitio).
 
-`git push` a `main` y jsDelivr toma el cambio. Ojo: **jsDelivr cachea agresivamente**
-(hasta 12h para un branch). Para forzar el refresh en la demo, usá un tag de
-versión en la URL en vez del branch:
+### Publicar cambios después
 
+Los snippets apuntan a un **tag de versión**, no a `@main`. Es a propósito:
+jsDelivr cachea un branch hasta 12h, así que con `@main` los cambios aparecen en
+un momento impredecible — lo peor posible para una demo. Con un tag sabés
+exactamente qué código se está sirviendo.
+
+Para publicar una versión nueva:
+
+```bash
+git tag v0.1.1 && git push origin v0.1.1
 ```
-https://cdn.jsdelivr.net/gh/TU-USUARIO/TU-REPO@v0.1.1/src/app.js
-```
+
+y cambiás el número en las dos URLs (`head.html` y `embed.html`).
+
+### Si le ponés un dominio propio al sitio
+
+El regex de CORS solo cubre `*.webflow.io`. Un dominio propio hay que agregarlo a
+`CORS_ORIGINS` en el `.env` del servidor y reiniciar el servicio.
 
 ---
 
@@ -127,6 +135,20 @@ tolera un 429 y reintenta con backoff en vez de tirar la vista.
 - **El polling tolera fallos transitorios.** Un 429 o un corte de red momentáneo
   no descarta la vista: el análisis ya está corriendo en el backend, así que se
   reintenta con backoff exponencial y solo se abandona tras 5 fallos seguidos.
+- **Hay un reset defensivo contra los estilos de Webflow.** Webflow inyecta su
+  propio normalize y estilos base para `h1-h6`, `p`, `ul`, `a` y `label`; sin
+  neutralizarlos la app hereda títulos gigantes, viñetas con `padding-left: 40px`
+  y links subrayados. El reset usa `.sc-app :where(p)` y no `.sc-app p`: así queda
+  en especificidad (0,1,0), que le gana a los selectores de elemento de Webflow
+  (0,0,1) pero empata con las clases de componente, que por venir después siempre
+  ganan. Con `.sc-app p` (0,1,1) el reset le pisaría los estilos a `.sc-hint`.
+- **La URL del backend está duplicada a propósito** en `head.html` y como default
+  en `api.js`. Si alguien pega solo el embed y se olvida del `<head>`, la app
+  funciona igual; un default a `localhost` fallaría por mixed content con un error
+  que no dice nada.
+- **El embed muestra un placeholder y un error si el CDN falla.** `mount()` limpia
+  el contenedor recién cuando tiene algo con qué reemplazarlo, así no hay un hueco
+  en blanco mientras carga.
 
 `taxonomy.js` es un **espejo** de `app/taxonomy.py` del branch `back`. Si cambia
 una, hay que cambiar la otra — hoy es manual y es la deuda técnica más obvia del

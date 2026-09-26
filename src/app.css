@@ -34,6 +34,81 @@
   box-sizing: border-box;
 }
 
+/* --- Reset defensivo ------------------------------------------------------
+ * Webflow inyecta su propio normalize y estilos base para h1-h6, p, ul, a y
+ * label. Sin neutralizarlos, la app hereda titulos gigantes, vinetas con
+ * padding-left de 40px y links subrayados.
+ *
+ * La especificidad esta elegida a proposito: `.sc-app :where(p)` cuenta como
+ * (0,1,0) — le gana a los selectores de elemento de Webflow (0,0,1) pero empata
+ * con las clases de componente de abajo, que por venir despues siempre ganan.
+ * Escribirlo como `.sc-app p` (0,1,1) le pisaria los estilos a `.sc-hint`, y con
+ * `:where(.sc-app) :where(p)` (0,0,0) ganaria Webflow. Es el punto medio justo.
+ */
+
+.sc-app :where(h2, h3, h4) {
+  margin: 0;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+}
+
+.sc-app :where(p) {
+  margin: 0 0 10px;
+  font-size: 0.9375rem;
+}
+
+.sc-app :where(p:last-child) {
+  margin-bottom: 0;
+}
+
+.sc-app :where(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-app :where(a) {
+  color: var(--sc-accent);
+  text-decoration: none;
+}
+
+.sc-app :where(label) {
+  font-weight: 600;
+}
+
+.sc-app :where(button) {
+  font-family: inherit;
+  text-transform: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.sc-app :where(input, select, textarea) {
+  font-family: inherit;
+  margin: 0;
+  min-height: 0;
+  max-width: none;
+}
+
+.sc-app :where(code, pre) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  white-space: normal;
+  color: inherit;
+}
+
+.sc-app :where(table) {
+  border-collapse: collapse;
+}
+
 @media (prefers-color-scheme: dark) {
   .sc-app:not([data-theme="light"]) {
     --sc-bg: #0f172a;

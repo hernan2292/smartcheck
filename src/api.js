@@ -6,7 +6,10 @@
  * por CDN sirve para local, staging y produccion.
  */
 
-const DEFAULT_API = "http://localhost:8000";
+// Backend desplegado. Es el default a proposito: si alguien pega el embed sin el
+// snippet del <head>, la app funciona igual. Un default a localhost romperia en
+// Webflow por mixed content y el error no diria nada util.
+const DEFAULT_API = "https://138.197.155.202.sslip.io";
 
 export function apiBase() {
   const configured = (window.SMARTCHECK_API || "").trim();

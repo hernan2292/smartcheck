@@ -1,21 +1,53 @@
 <!--
   SmartCheck — snippet para el body de la pagina
+  ============================================================================
 
-  DONDE: arrastrá un elemento "Embed" (Add panel > Components > Embed) al lugar
-         de la pagina donde quieras la app, y pegá esto adentro.
+  DONDE: arrastra un elemento "Embed" (Add panel > Components > Embed) al lugar
+         de la pagina donde quieras la app, y pega TODO esto adentro.
 
-  ALTERNATIVA: si preferis, poné solo el <div> en el Embed y el <script> en
-  Page Settings > Custom Code > Before </body> tag. Da igual, pero el script
-  tiene que cargar DESPUES del div (por eso lleva type="module", que ya es
-  deferido por definicion).
+  No hay nada que reemplazar: el repo y la URL del backend ya vienen puestos.
 
-  NOTA: jsDelivr cachea un branch hasta 12h. Para forzar refresh en una demo,
-  cambiá @main por un tag de version, ej. @v0.1.1
+  Requiere que tambien pegues webflow/head.html en
+  Page Settings > Custom Code > Inside <head> tag (ahi van los estilos).
+
+  ---------------------------------------------------------------------------
+  Sobre la version fijada (@v0.1.0)
+
+  Se usa un tag y no @main a proposito: jsDelivr cachea un branch hasta 12h, asi
+  que con @main los cambios aparecen en un momento impredecible — lo peor posible
+  para una demo. Con un tag sabes exactamente que codigo se esta sirviendo.
+
+  Para publicar cambios: desde el repo, `git tag v0.1.1 && git push origin v0.1.1`
+  y cambias el numero en las dos URLs (aca y en head.html).
+  ---------------------------------------------------------------------------
 -->
 
-<div id="smartcheck-app"></div>
+<div id="smartcheck-app">
+  <p style="color: #64748b; font-size: 0.9375rem">Cargando el auditor…</p>
+</div>
 
 <script type="module">
-  import { mount } from "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@main/src/app.js";
-  mount("#smartcheck-app");
+  const MOUNT = "#smartcheck-app";
+  const SRC =
+    "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.0/src/app.js";
+
+  try {
+    const { mount } = await import(SRC);
+    await mount(MOUNT);
+  } catch (error) {
+    // Sin esto, si el modulo no carga (CDN caido, red del visitante, un
+    // bloqueador) el visitante ve un div vacio y no hay forma de saber por que.
+    console.error("[smartcheck] no se pudo cargar", SRC, error);
+    const node = document.querySelector(MOUNT);
+    if (node) {
+      node.textContent = "";
+      const msg = document.createElement("p");
+      msg.style.cssText =
+        "padding:14px 16px;border-radius:10px;background:#f8fafc;" +
+        "border-left:4px solid #dc2626;color:#0f172a;font-size:0.9375rem";
+      msg.textContent =
+        "No se pudo cargar el auditor. Probá recargando la página.";
+      node.appendChild(msg);
+    }
+  }
 </script>

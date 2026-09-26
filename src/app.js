@@ -485,7 +485,6 @@ export async function mount(selector = "#smartcheck-app") {
 
   root = container;
   root.classList.add("sc-app");
-  clear(root);
 
   // La lista de redes la manda el backend, pero el form tiene que dibujarse
   // igual si el backend esta caido: asi el modo explorar sigue sirviendo.
@@ -498,6 +497,9 @@ export async function mount(selector = "#smartcheck-app") {
     backendDown = true;
   }
 
+  // Se limpia recien aca, no antes del fetch: asi el placeholder de "cargando"
+  // que trae el embed sigue visible hasta que hay algo con que reemplazarlo.
+  clear(root);
   root.append(renderForm(networks));
 
   if (backendDown) {
