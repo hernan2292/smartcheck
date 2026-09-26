@@ -181,22 +181,71 @@ share link cae al de este backend. Un problema de CMS no invalida un analisis.
 
 ---
 
-## Deploy en DigitalOcean
+## Deploy
 
-Droplet chico (2 vCPU / 2GB) con Docker:
+### Lo que ya esta corriendo
+
+Desplegado en el droplet `138.197.155.202` con **systemd + venv**, no con Docker.
+Ese droplet tiene 458MB de RAM, 1 vCPU y ~2GB de disco libre, y ademas hostea el
+sitio en produccion `whitepaper-dev.com`. La imagen de Docker (base Python
+duplicada + Slither + solc) usaba ~600MB mas de disco del que habia; el venv
+ocupa ~300MB.
+
+```
+API          http://138.197.155.202:8000
+servicio     /etc/systemd/system/smartcheck.service
+codigo       /opt/smartcheck          (git, branch back)
+datos        /var/lib/smartcheck/data (SQLite)
+solc         /var/lib/smartcheck/.solc-select
+usuario      smartcheck (sistema, sin login)
+```
+
+Operacion:
 
 ```bash
-git clone -b back <tu-repo> smartcheck && cd smartcheck
-cp .env.example .env && nano .env      # poné PUBLIC_BASE_URL y CORS_ORIGINS
+systemctl status smartcheck
+journalctl -u smartcheck -f
+cd /opt/smartcheck && git pull && systemctl restart smartcheck   # actualizar
+```
+
+La unit trae techos de recursos a proposito, porque en esta maquina un Slither
+desbocado se llevaria puesto el sitio en produccion:
+
+| Directiva | Valor | Por que |
+|---|---|---|
+| `MemoryMax` | 320M | Deja ~130MB de RAM garantizados para nginx y el resto |
+| `MemorySwapMax` | 1024M | Slither puede swapear en vez de morir |
+| `CPUQuota` | 80% | Hay un solo vCPU compartido con el sitio |
+| `MAX_WORKERS` (.env) | 1 | Dos Slither en paralelo no entran en 458MB |
+
+Tambien se agregaron **2GB de swap** (`/swapfile`, persistido en `/etc/fstab`).
+Sin swap, Slither no completaba: el droplet ya tenia contenedores muertos con
+exit 137 de un OOM anterior.
+
+Endurecimiento de la unit (`ProtectSystem=strict`, `PrivateTmp`,
+`NoNewPrivileges`, `ReadWritePaths` limitado a `/var/lib/smartcheck`): Slither
+compila Solidity arbitrario que manda el usuario, y esta maquina no es solo
+nuestra.
+
+### En un droplet normal (>= 1GB RAM, Docker)
+
+```bash
+git clone -b back https://github.com/hernan2292/smartcheck.git && cd smartcheck
+cp .env.example .env && nano .env      # PUBLIC_BASE_URL y CORS_ORIGINS
 docker compose up -d --build
 ```
 
-Antes de la demo, dos cosas que importan:
+### Lo que falta para produccion
 
-1. **`CORS_ORIGINS`** tiene que tener el dominio de Webflow, no `*`.
-2. **HTTPS.** El sitio de Webflow es HTTPS, asi que un backend en HTTP puro va a
-   ser bloqueado por mixed content. Poné Caddy adelante (2 lineas de Caddyfile y
-   te resuelve el cert solo) o el load balancer de DO.
+1. **HTTPS.** Hoy la API es HTTP puro. Sirve para el front en local, pero Webflow
+   sirve por HTTPS y el navegador bloquea por mixed content sin siquiera intentar
+   la request. Hace falta un subdominio apuntando al droplet + cert (certbot ya
+   esta instalado ahi por el otro sitio), o Cloudflare adelante.
+2. **`CORS_ORIGINS`** hoy tiene solo origenes de localhost. Sumá el dominio de
+   Webflow cuando publiques.
+3. **El puerto 8000 esta abierto al mundo y la API no tiene rate limiting.**
+   Cualquiera puede encolar audits en una maquina de 458MB. Para cerrarlo a tu IP:
+   `ufw allow from <tu-ip> to any port 8000 && ufw allow 22,80,443/tcp && ufw enable`.
 
 ---
 
