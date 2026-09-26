@@ -394,10 +394,18 @@ function showLoading(message) {
 function showError(message) {
   const output = $("#sc-output");
   clear(output);
+
+  // El backend manda errores de compilacion de solc en varias lineas, con un
+  // caret que apunta a la columna exacta. Un <p> colapsa los espacios y arruina
+  // esa alineacion, asi que el detalle va en un <pre>.
+  const [resumen, ...resto] = String(message).split(/\n\s*\n/);
+  const detalle = resto.join("\n\n").trim();
+
   output.append(
     el("div", { class: "sc-alert", role: "alert" }, [
       el("strong", { text: "No se pudo completar el análisis" }),
-      el("p", { style: "margin:6px 0 0", text: message }),
+      el("p", { style: "margin:6px 0 0", text: resumen.trim() }),
+      detalle ? el("pre", { class: "sc-error-detail", text: detalle }) : null,
     ]),
   );
 }

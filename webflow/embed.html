@@ -11,13 +11,13 @@
   Page Settings > Custom Code > Inside <head> tag (ahi van los estilos).
 
   ---------------------------------------------------------------------------
-  Sobre la version fijada (@v0.1.0)
+  Sobre la version fijada (@v0.1.1)
 
   Se usa un tag y no @main a proposito: jsDelivr cachea un branch hasta 12h, asi
   que con @main los cambios aparecen en un momento impredecible — lo peor posible
   para una demo. Con un tag sabes exactamente que codigo se esta sirviendo.
 
-  Para publicar cambios: desde el repo, `git tag v0.1.1 && git push origin v0.1.1`
+  Para publicar cambios: desde el repo, `git tag v0.1.2 && git push origin v0.1.2`
   y cambias el numero en las dos URLs (aca y en head.html).
   ---------------------------------------------------------------------------
 -->
@@ -29,7 +29,7 @@
 <script type="module">
   const MOUNT = "#smartcheck-app";
   const SRC =
-    "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.0/src/app.js";
+    "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.1/src/app.js";
 
   try {
     const { mount } = await import(SRC);

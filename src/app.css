@@ -249,6 +249,24 @@
   border-left-color: var(--sc-accent);
 }
 
+/* Salida del compilador: mantiene la alineacion del caret de solc, que indica
+ * la columna exacta del error. Scrollea horizontal en vez de wrapear, porque
+ * cortar la linea desalinea el caret y lo vuelve inutil. */
+.sc-error-detail {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--sc-muted);
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
 .sc-loading {
   display: flex;
   align-items: center;

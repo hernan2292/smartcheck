@@ -89,7 +89,7 @@ exactamente qué código se está sirviendo.
 Para publicar una versión nueva:
 
 ```bash
-git tag v0.1.1 && git push origin v0.1.1
+git tag v0.1.2 && git push origin v0.1.2
 ```
 
 y cambiás el número en las dos URLs (`head.html` y `embed.html`).
