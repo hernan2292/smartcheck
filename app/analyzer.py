@@ -295,6 +295,55 @@ def ensure_solc(version: str) -> str:
     raise AnalysisError(f"No se pudo obtener ningun solc usable: {last_error}")
 
 
+def _solc_compile_error(target: Path, root: Path, version: str) -> str:
+    """Corre solc aparte para conseguir el error de compilacion real.
+
+    Hace falta porque `slither --json -` no imprime NADA cuando la compilacion
+    falla: sale con exit 1, stdout vacio y stderr vacio. Sin esto el usuario que
+    pega codigo con un typo recibe un mensaje que no dice nada.
+    solc, en cambio, da el error con archivo, linea, columna y un caret.
+    """
+    try:
+        result = _run(
+            [_find_executable("solc"), str(target.relative_to(root))],
+            timeout=config.SOLC_TIMEOUT,
+            cwd=str(root),
+            env=_subprocess_env(version),
+        )
+    except (subprocess.TimeoutExpired, AnalysisError) as exc:
+        log.warning("No se pudo obtener el error de solc: %s", exc)
+        return ""
+    # solc escribe los errores en stderr, pero no siempre
+    return (result.stderr.strip() or result.stdout.strip())[:1500]
+
+
+def _explain_failure(
+    result: subprocess.CompletedProcess, target: Path, root: Path, version: str
+) -> AnalysisError:
+    """Arma el mensaje de error mas util que se pueda para un fallo de Slither."""
+    detail = _solc_compile_error(target, root, version)
+    combined = f"{result.stderr}\n{detail}"
+
+    if "Source file requires different compiler version" in combined:
+        return AnalysisError(
+            f"El contrato no compila con solc {version}. Revisá el pragma:\n\n{detail}"
+        )
+    if "not found" in combined.lower() or "File outside allowed directories" in combined:
+        return AnalysisError(
+            "Falta una dependencia que el contrato importa. Si usa OpenZeppelin, "
+            "pegá el codigo aplanado (flattened) o audita una address verificada, "
+            f"que trae el arbol completo.\n\n{detail}"
+        )
+    if detail:
+        return AnalysisError(f"El contrato no compila con solc {version}:\n\n{detail}")
+
+    stderr = result.stderr.strip()
+    return AnalysisError(
+        "Slither no produjo resultados y el compilador no reporto el motivo."
+        + (f"\n\n{stderr[:600]}" if stderr else "")
+    )
+
+
 def _pick_target(root: Path, sources: dict[str, str]) -> Path:
     """Elige el archivo a analizar: el mas grande que no sea una dependencia."""
     candidates = [
@@ -354,16 +403,7 @@ def run_slither(sources: dict[str, str]) -> tuple[dict, str]:
         # El error real es no poder parsear JSON de stdout.
         stdout = result.stdout.strip()
         if not stdout:
-            stderr = result.stderr.strip()
-            hint = ""
-            if "Source file requires different compiler version" in stderr:
-                hint = f" (se uso solc {version}; revisa el pragma)"
-            elif "File not found" in stderr or "not found:" in stderr:
-                hint = (
-                    " Falta una dependencia: si el contrato importa OpenZeppelin, "
-                    "pega el codigo aplanado (flattened) o usa una address verificada."
-                )
-            raise AnalysisError(f"Slither no produjo salida{hint}. stderr: {stderr[:600]}")
+            raise _explain_failure(result, target, root, version)
 
         try:
             payload = json.loads(stdout)
