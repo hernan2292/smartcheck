@@ -9,12 +9,13 @@
   tiene que cargar DESPUES del div (por eso lleva type="module", que ya es
   deferido por definicion).
 
-  IMPORTANTE: reemplazá TU-USUARIO/TU-REPO por tu repo de GitHub (publico).
+  NOTA: jsDelivr cachea un branch hasta 12h. Para forzar refresh en una demo,
+  cambiá @main por un tag de version, ej. @v0.1.1
 -->
 
 <div id="smartcheck-app"></div>
 
 <script type="module">
-  import { mount } from "https://cdn.jsdelivr.net/gh/TU-USUARIO/TU-REPO@main/src/app.js";
+  import { mount } from "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@main/src/app.js";
   mount("#smartcheck-app");
 </script>

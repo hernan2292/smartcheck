@@ -22,13 +22,24 @@ index.html      # harness de dev local (no se despliega)
 
 ---
 
-## Desarrollo local
+## Verlo funcionando ahora
 
-Necesitás el backend corriendo en `localhost:8000` (ver el README del branch `back`).
+El backend ya está desplegado en `http://138.197.155.202:8000` y `index.html`
+apunta ahí por default. Solo hace falta servir esta carpeta:
 
 ```bash
-python -m http.server 3000
-# abrir http://localhost:3000
+python -m http.server 5173 --bind 127.0.0.1
+# abrir http://localhost:5173
+```
+
+> Se usa 5173 y no 3000 porque en esta máquina el 3000 ya lo ocupa otro proceso
+> Node. Si cambiás de puerto, agregalo a `CORS_ORIGINS` en el `.env` del servidor
+> o el navegador va a bloquear las requests.
+
+Para apuntar a otro backend sin editar nada, pasalo por query string:
+
+```
+http://localhost:5173/?api=http://localhost:8000
 ```
 
 `index.html` replica exactamente lo que hacen los snippets de Webflow, así que
