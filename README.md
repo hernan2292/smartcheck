@@ -78,7 +78,7 @@ cachea un branch hasta 12h, así que con `@main` los cambios aparecen en un mome
 impredecible — lo peor posible para una demo.
 
 ```bash
-git tag v0.1.3 && git push origin v0.1.3
+git tag v0.1.4 && git push origin v0.1.4
 ```
 
 y cambiás `VERSION` en `webflow/embed.html`.
