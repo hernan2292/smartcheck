@@ -192,13 +192,35 @@ duplicada + Slither + solc) usaba ~600MB mas de disco del que habia; el venv
 ocupa ~300MB.
 
 ```
-API          http://138.197.155.202:8000
+API publica  https://138.197.155.202.sslip.io   (HTTPS, Let's Encrypt)
+uvicorn      127.0.0.1:8000                     (loopback; NO expuesto)
+nginx        /etc/nginx/sites-available/smartcheck  (reverse proxy)
 servicio     /etc/systemd/system/smartcheck.service
 codigo       /opt/smartcheck          (git, branch back)
 datos        /var/lib/smartcheck/data (SQLite)
 solc         /var/lib/smartcheck/.solc-select
 usuario      smartcheck (sistema, sin login)
 ```
+
+### HTTPS sin dominio propio
+
+El cert es de Let's Encrypt sobre `138.197.155.202.sslip.io`. **sslip.io resuelve
+cualquier `<ip>.sslip.io` a esa IP**, asi que se pudo emitir un cert sin tener un
+dominio ni tocar ningun DNS — y sin meter mano en la config de
+`whitepaper-dev.com`, que vive en su propio archivo de nginx intacto (hay backup
+en `/root/white-paper-landing.nginx.bak.*`).
+
+Renovacion automatica por `certbot.timer`. Necesita el puerto 80 abierto para el
+challenge ACME, por eso UFW lo permite aunque todo redirija a HTTPS.
+
+### Red y firewall
+
+UFW activo. Solo entran **22, 80 y 443**. El 8000 no tiene regla y ademas uvicorn
+escucha solo en loopback: doble cierre.
+
+uvicorn corre con `--proxy-headers --forwarded-allow-ips=127.0.0.1`. Sin esos
+flags **el rate limiting seria inutil**: todas las requests parecerian venir de
+nginx (127.0.0.1) y compartirian un solo cupo.
 
 Operacion:
 
@@ -218,6 +240,12 @@ desbocado se llevaria puesto el sitio en produccion:
 | `CPUQuota` | 80% | Hay un solo vCPU compartido con el sitio |
 | `MAX_WORKERS` (.env) | 1 | Dos Slither en paralelo no entran en 458MB |
 
+Y rate limiting en la app, que es la otra mitad de la proteccion: **5 analisis
+cada 10 minutos por IP** y **20 globales**, porque cada analisis arranca un
+Slither. Las lecturas tienen techo alto (300/min) porque el frontend hace polling.
+El contador es por proceso: con mas de un worker de uvicorn el limite efectivo se
+multiplica y haria falta Redis.
+
 Tambien se agregaron **2GB de swap** (`/swapfile`, persistido en `/etc/fstab`).
 Sin swap, Slither no completaba: el droplet ya tenia contenedores muertos con
 exit 137 de un OOM anterior.
@@ -235,17 +263,31 @@ cp .env.example .env && nano .env      # PUBLIC_BASE_URL y CORS_ORIGINS
 docker compose up -d --build
 ```
 
+### CORS
+
+`CORS_ORIGINS` tiene los origenes de dev (localhost en varios puertos) y
+`CORS_ORIGIN_REGEX` acepta cualquier sitio de Webflow:
+
+```
+CORS_ORIGIN_REGEX=^https://[a-z0-9-]+[.]webflow[.]io$
+```
+
+Se usa `[.]` y no `\.` a proposito: **systemd procesa los escapes del
+EnvironmentFile y se come el backslash**, dejando un `.` que matchea cualquier
+caracter y afloja el control sin avisar. La clase de caracteres es equivalente e
+inmune a eso. Si le pones un dominio propio al sitio de Webflow, va en
+`CORS_ORIGINS` (el regex solo cubre `*.webflow.io`).
+
 ### Lo que falta para produccion
 
-1. **HTTPS.** Hoy la API es HTTP puro. Sirve para el front en local, pero Webflow
-   sirve por HTTPS y el navegador bloquea por mixed content sin siquiera intentar
-   la request. Hace falta un subdominio apuntando al droplet + cert (certbot ya
-   esta instalado ahi por el otro sitio), o Cloudflare adelante.
-2. **`CORS_ORIGINS`** hoy tiene solo origenes de localhost. Sumá el dominio de
-   Webflow cuando publiques.
-3. **El puerto 8000 esta abierto al mundo y la API no tiene rate limiting.**
-   Cualquiera puede encolar audits en una maquina de 458MB. Para cerrarlo a tu IP:
-   `ufw allow from <tu-ip> to any port 8000 && ufw allow 22,80,443/tcp && ufw enable`.
+- **El hostname `sslip.io` es feo y depende de un DNS de terceros.** Funciona y el
+  cert es valido, pero para algo serio conviene un dominio propio: apuntas un A
+  record al droplet, `certbot --nginx -d api.tudominio.com`, y cambias
+  `PUBLIC_BASE_URL` mas la URL en `webflow/head.html` del branch `main`.
+- **El rate limiting es por proceso y en memoria.** Se reinicia con el servicio.
+- **Regla vieja de UFW:** hay un `8001/tcp ALLOW IN` que no es de este proyecto y
+  no tiene nada escuchando. Inofensivo hoy, pero conviene sacarlo
+  (`ufw delete allow 8001/tcp`) si no lo usa el otro sitio.
 
 ---
 
