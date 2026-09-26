@@ -1,0 +1,452 @@
+/**
+ * Estilos de SmartCheck.
+ *
+ * Todo va namespaceado bajo .sc- para no pelearse con los estilos de Webflow,
+ * que inyecta su propio reset y clases globales. Las variables se declaran en
+ * el contenedor, no en :root, por la misma razon.
+ */
+
+.sc-app {
+  --sc-bg: #ffffff;
+  --sc-surface: #f8fafc;
+  --sc-border: #e2e8f0;
+  --sc-text: #0f172a;
+  --sc-muted: #64748b;
+  --sc-accent: #4f46e5;
+  --sc-ok: #16a34a;
+  --sc-warning: #d97706;
+  --sc-risk: #dc2626;
+  --sc-na: #94a3b8;
+  --sc-radius: 10px;
+
+  box-sizing: border-box;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 8px 0 48px;
+  font-family: inherit;
+  color: var(--sc-text);
+  line-height: 1.6;
+}
+
+.sc-app *,
+.sc-app *::before,
+.sc-app *::after {
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sc-app:not([data-theme="light"]) {
+    --sc-bg: #0f172a;
+    --sc-surface: #1e293b;
+    --sc-border: #334155;
+    --sc-text: #f1f5f9;
+    --sc-muted: #94a3b8;
+    --sc-accent: #818cf8;
+  }
+}
+
+/* --- Formulario ---------------------------------------------------------- */
+
+.sc-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.sc-tab {
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  color: var(--sc-muted);
+  cursor: pointer;
+}
+
+.sc-tab[aria-selected="true"] {
+  color: var(--sc-accent);
+  border-bottom-color: var(--sc-accent);
+}
+
+.sc-panel[hidden] {
+  display: none;
+}
+
+.sc-field {
+  margin-bottom: 14px;
+}
+
+.sc-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sc-input,
+.sc-select,
+.sc-textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: inherit;
+}
+
+.sc-input:focus-visible,
+.sc-select:focus-visible,
+.sc-textarea:focus-visible,
+.sc-btn:focus-visible,
+.sc-tab:focus-visible,
+.sc-cat-header:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+
+.sc-textarea {
+  min-height: 220px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.sc-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.sc-row > .sc-field {
+  flex: 1 1 200px;
+  margin-bottom: 0;
+}
+
+.sc-btn {
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--sc-radius);
+  background: var(--sc-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sc-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.sc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sc-btn--ghost {
+  background: transparent;
+  border-color: var(--sc-border);
+  color: var(--sc-text);
+}
+
+.sc-hint {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sc-muted);
+}
+
+/* --- Estados ------------------------------------------------------------- */
+
+.sc-alert {
+  padding: 14px 16px;
+  border-radius: var(--sc-radius);
+  border-left: 4px solid var(--sc-risk);
+  background: var(--sc-surface);
+  margin: 20px 0;
+}
+
+.sc-alert--info {
+  border-left-color: var(--sc-accent);
+}
+
+.sc-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  margin: 20px 0;
+}
+
+.sc-spinner {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--sc-border);
+  border-top-color: var(--sc-accent);
+  border-radius: 50%;
+  animation: sc-spin 0.8s linear infinite;
+}
+
+@keyframes sc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-spinner {
+    animation-duration: 2.5s;
+  }
+}
+
+/* --- Resultado ----------------------------------------------------------- */
+
+.sc-verdict {
+  padding: 18px 20px;
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  margin-bottom: 8px;
+  border-left: 5px solid var(--sc-na);
+}
+
+.sc-verdict[data-verdict="listo"] {
+  border-left-color: var(--sc-ok);
+}
+.sc-verdict[data-verdict="revisar"] {
+  border-left-color: var(--sc-warning);
+}
+.sc-verdict[data-verdict="no-listo"] {
+  border-left-color: var(--sc-risk);
+}
+
+.sc-verdict-label {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.sc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0 0 24px;
+  font-size: 0.8125rem;
+  color: var(--sc-muted);
+}
+
+.sc-meta code {
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.sc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.sc-cats {
+  display: grid;
+  gap: 10px;
+}
+
+.sc-cat {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  overflow: hidden;
+  background: var(--sc-bg);
+}
+
+.sc-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-left: 4px solid var(--sc-na);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sc-cat[data-status="ok"] .sc-cat-header {
+  border-left-color: var(--sc-ok);
+}
+.sc-cat[data-status="warning"] .sc-cat-header {
+  border-left-color: var(--sc-warning);
+}
+.sc-cat[data-status="risk"] .sc-cat-header {
+  border-left-color: var(--sc-risk);
+}
+
+.sc-cat-id {
+  flex-shrink: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sc-muted);
+}
+
+.sc-cat-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.sc-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--sc-surface);
+  color: var(--sc-na);
+}
+
+.sc-cat[data-status="ok"] .sc-badge {
+  color: var(--sc-ok);
+}
+.sc-cat[data-status="warning"] .sc-badge {
+  color: var(--sc-warning);
+}
+.sc-cat[data-status="risk"] .sc-badge {
+  color: var(--sc-risk);
+}
+
+.sc-chevron {
+  flex-shrink: 0;
+  color: var(--sc-muted);
+  transition: transform 0.15s ease;
+}
+
+.sc-cat-header[aria-expanded="true"] .sc-chevron {
+  transform: rotate(90deg);
+}
+
+.sc-cat-body {
+  padding: 4px 16px 18px;
+  border-top: 1px solid var(--sc-border);
+}
+
+.sc-cat-body[hidden] {
+  display: none;
+}
+
+.sc-cat-body h4 {
+  margin: 16px 0 6px;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sc-muted);
+}
+
+.sc-note {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--sc-surface);
+  color: var(--sc-muted);
+  font-size: 0.875rem;
+}
+
+.sc-findings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.sc-finding {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--sc-surface);
+  font-size: 0.875rem;
+}
+
+.sc-finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.sc-finding code {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sc-sev {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--sc-na);
+}
+
+.sc-sev[data-sev="high"] {
+  background: var(--sc-risk);
+}
+.sc-sev[data-sev="medium"] {
+  background: var(--sc-warning);
+}
+.sc-sev[data-sev="low"] {
+  background: #0284c7;
+}
+
+.sc-finding-loc {
+  font-size: 0.75rem;
+  color: var(--sc-muted);
+}
+
+.sc-finding-desc {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--sc-muted);
+  overflow-x: auto;
+}
+
+.sc-empty {
+  margin: 0;
+  color: var(--sc-muted);
+  font-size: 0.875rem;
+}
+
+.sc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 560px) {
+  .sc-cat-header {
+    flex-wrap: wrap;
+  }
+  .sc-cat-name {
+    flex-basis: 100%;
+    order: 3;
+  }
+}

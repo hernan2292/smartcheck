@@ -1,0 +1,22 @@
+<!--
+  SmartCheck — snippet para el <head>
+
+  DONDE: Webflow Designer > Page Settings (o Site Settings para todo el sitio)
+         > Custom Code > Inside <head> tag
+
+  QUE HACE: define la URL del backend y carga los estilos desde jsDelivr.
+
+  IMPORTANTE: reemplazá los tres placeholders de abajo:
+    TU-USUARIO/TU-REPO  -> tu repo de GitHub (tiene que ser publico)
+    https://api.tudominio.com -> la URL de tu backend en DigitalOcean (con HTTPS)
+-->
+
+<script>
+  // URL del backend. Sin barra final.
+  window.SMARTCHECK_API = "https://api.tudominio.com";
+</script>
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/TU-USUARIO/TU-REPO@main/src/app.css"
+/>

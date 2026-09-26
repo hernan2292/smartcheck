@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmartCheck — dev local</title>
+
+    <!--
+      Harness de desarrollo local. NO se despliega: replica lo que hace Webflow
+      con los snippets de webflow/ para poder iterar sin publicar cada cambio.
+
+      Uso:  python -m http.server 3000     (desde la raiz del repo)
+            http://localhost:3000
+    -->
+    <script>
+      // En Webflow esto sale de webflow/head.html
+      window.SMARTCHECK_API = "http://localhost:8000";
+    </script>
+
+    <link rel="stylesheet" href="./src/app.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 40px 20px;
+        font-family:
+          system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: #fff;
+        color: #0f172a;
+      }
+      .dev-header {
+        max-width: 980px;
+        margin: 0 auto 28px;
+      }
+      .dev-header h1 {
+        margin: 0 0 6px;
+        font-size: 1.75rem;
+      }
+      .dev-header p {
+        margin: 0;
+        color: #64748b;
+      }
+      .dev-badge {
+        display: inline-block;
+        margin-bottom: 14px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0f172a;
+          color: #f1f5f9;
+        }
+        .dev-header p {
+          color: #94a3b8;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dev-header">
+      <span class="dev-badge">dev local</span>
+      <h1>SmartCheck</h1>
+      <p>
+        Auditor de contratos Solidity mapeado al OWASP Smart Contract Security
+        Top 10. En Webflow esta página la reemplaza tu diseño; lo único que se
+        pega ahí es el div y el script.
+      </p>
+    </div>
+
+    <div id="smartcheck-app"></div>
+
+    <script type="module">
+      import { mount } from "./src/app.js";
+      mount("#smartcheck-app");
+    </script>
+  </body>
+</html>

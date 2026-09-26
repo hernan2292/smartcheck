@@ -1,0 +1,20 @@
+<!--
+  SmartCheck — snippet para el body de la pagina
+
+  DONDE: arrastrá un elemento "Embed" (Add panel > Components > Embed) al lugar
+         de la pagina donde quieras la app, y pegá esto adentro.
+
+  ALTERNATIVA: si preferis, poné solo el <div> en el Embed y el <script> en
+  Page Settings > Custom Code > Before </body> tag. Da igual, pero el script
+  tiene que cargar DESPUES del div (por eso lleva type="module", que ya es
+  deferido por definicion).
+
+  IMPORTANTE: reemplazá TU-USUARIO/TU-REPO por tu repo de GitHub (publico).
+-->
+
+<div id="smartcheck-app"></div>
+
+<script type="module">
+  import { mount } from "https://cdn.jsdelivr.net/gh/TU-USUARIO/TU-REPO@main/src/app.js";
+  mount("#smartcheck-app");
+</script>
