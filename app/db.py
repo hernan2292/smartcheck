@@ -44,8 +44,17 @@ def _now() -> str:
 
 
 def connect() -> sqlite3.Connection:
-    Path(config.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(config.DB_PATH, timeout=30, check_same_thread=False)
+    try:
+        Path(config.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(config.DB_PATH, timeout=30, check_same_thread=False)
+    except (OSError, sqlite3.OperationalError) as exc:
+        # El error crudo de sqlite ("unable to open database file") no dice nada
+        # util. En el deploy esto pasa casi siempre por el volumen mal montado.
+        raise RuntimeError(
+            f"No se pudo abrir la base en DB_PATH={config.DB_PATH!r}: {exc}. "
+            "Revisá que el directorio exista y sea escribible "
+            "(en Docker, que el volumen este montado)."
+        ) from exc
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
