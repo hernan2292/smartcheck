@@ -1,36 +1,18 @@
 <!--
-  SmartCheck — snippet para el <head>
+  ============================================================================
+  SmartCheck — OPCIONAL. No hace falta pegar esto.
   ============================================================================
 
-  DONDE: Webflow Designer > Page Settings > Custom Code > Inside <head> tag
-         (o Site Settings > Custom Code si lo queres en todo el sitio)
+  Para desplegar en Webflow alcanza con webflow/embed.html, que ya carga sus
+  propios estilos y trae la URL del backend por default.
 
-  No hay nada que reemplazar. Pegalo tal cual.
+  Este snippet sirve para UNA sola cosa: apuntar la app a otro backend sin tocar
+  el repo (por ejemplo, para probar contra uno propio).
 
-  Despues pega webflow/embed.html en un elemento Embed del body.
-
-  ---------------------------------------------------------------------------
-  Por que funciona sin configurar nada mas:
-
-  - El backend ya esta detras de HTTPS con cert de Let's Encrypt, asi que el
-    navegador no lo bloquea por mixed content.
-  - Su CORS acepta cualquier https://<algo>.webflow.io por regex, asi que no hace
-    falta saber de antemano el nombre de tu sitio.
-
-  Si le pones un DOMINIO PROPIO al sitio de Webflow, ese hay que agregarlo a
-  CORS_ORIGINS en el .env del servidor — el regex solo cubre *.webflow.io.
-  ---------------------------------------------------------------------------
+  DONDE, si lo necesitas: Page Settings > Custom Code > Inside <head> tag
 -->
 
 <script>
-  // URL del backend, sin barra final.
-  // Si borras esta linea la app sigue andando: src/api.js tiene el mismo valor
-  // como default. Esta aca para que puedas apuntarla a otro backend sin tocar
-  // el repo.
+  // URL del backend, sin barra final. Sobrescribe el default de src/api.js.
   window.SMARTCHECK_API = "https://138.197.155.202.sslip.io";
 </script>
-
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.1/src/app.css"
-/>

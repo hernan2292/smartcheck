@@ -8,7 +8,7 @@
  * Monta en #smartcheck-app. Config via window.SMARTCHECK_API.
  */
 
-import { api, pollAudit, apiBase } from "./api.js";
+import { api, pollAudit } from "./api.js";
 import { CATEGORIES, OWASP_SCS_VERSION } from "./taxonomy.js";
 
 const STATUS_LABEL = { ok: "OK", warning: "Advertencia", risk: "Riesgo", "n/a": "No aplica" };
@@ -516,7 +516,9 @@ export async function mount(selector = "#smartcheck-app") {
         el("strong", { text: "El backend no responde" }),
         el("p", {
           style: "margin:6px 0 0",
-          text: `No se pudo contactar ${apiBase()}. Podés explorar la taxonomía igual, pero no auditar todavía.`,
+          text:
+            "El servicio de análisis no responde en este momento. " +
+            "Podés explorar la taxonomía igual, pero no auditar todavía.",
         }),
       ]),
     );

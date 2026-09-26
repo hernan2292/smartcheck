@@ -53,46 +53,35 @@ podés iterar sin publicar el sitio en cada cambio.
 
 ## Desplegar en Webflow
 
-Webflow no hostea archivos arbitrarios, así que la estrategia es: **el código se
-sirve desde jsDelivr (que lee este repo) y Webflow solo lo carga.** El repo es
-público, que es lo único que jsDelivr necesita.
+Webflow no hostea archivos arbitrarios, así que el código se sirve desde jsDelivr
+(que lee este repo, público) y Webflow solo lo carga.
 
-**No hay nada que reemplazar en los snippets.** El repo, la versión y la URL del
-backend ya vienen puestos.
+**Se pega una sola cosa:** [`webflow/embed.html`](webflow/embed.html) en un
+elemento **Embed** (Add panel → Components → Embed). No hay nada que reemplazar y
+no hay que tocar el `<head>` — el snippet carga sus propios estilos.
 
-### 1. Pegar el `<head>`
+> **No pegues [`index.html`](index.html).** Ese archivo es el harness de
+> desarrollo local y usa rutas relativas (`./src/app.js`) que en Webflow no
+> resuelven a nada, así que la app no carga. Por eso `webflow/embed.html` trae
+> URLs absolutas del CDN.
 
-Webflow Designer → **Page Settings** → Custom Code → *Inside `<head>` tag*.
-Pegá [`webflow/head.html`](webflow/head.html) tal cual. Ahí van los estilos y la
-URL del backend.
+[`webflow/head.html`](webflow/head.html) es **opcional** y sirve para una sola
+cosa: apuntar la app a otro backend sin tocar el repo.
 
-### 2. Pegar el embed
+Funciona sin configurar nada más porque el backend está detrás de HTTPS (no hay
+mixed content) y su CORS acepta cualquier `https://<algo>.webflow.io` por regex.
 
-Arrastrá un elemento **Embed** (Add panel → Components → Embed) donde quieras la
-app y pegá [`webflow/embed.html`](webflow/embed.html) tal cual.
+### Publicar cambios
 
-### 3. Publicar
-
-Publicá el sitio. El `<div id="smartcheck-app">` se llena solo.
-
-Funciona sin configurar nada más porque el backend ya está detrás de HTTPS (no hay
-mixed content) y su CORS acepta cualquier `https://<algo>.webflow.io` por regex
-(no hace falta saber de antemano el nombre del sitio).
-
-### Publicar cambios después
-
-Los snippets apuntan a un **tag de versión**, no a `@main`. Es a propósito:
-jsDelivr cachea un branch hasta 12h, así que con `@main` los cambios aparecen en
-un momento impredecible — lo peor posible para una demo. Con un tag sabés
-exactamente qué código se está sirviendo.
-
-Para publicar una versión nueva:
+El snippet apunta a un **tag de versión**, no a `@main`. Es a propósito: jsDelivr
+cachea un branch hasta 12h, así que con `@main` los cambios aparecen en un momento
+impredecible — lo peor posible para una demo.
 
 ```bash
-git tag v0.1.2 && git push origin v0.1.2
+git tag v0.1.3 && git push origin v0.1.3
 ```
 
-y cambiás el número en las dos URLs (`head.html` y `embed.html`).
+y cambiás `VERSION` en `webflow/embed.html`.
 
 ### Si le ponés un dominio propio al sitio
 
@@ -142,10 +131,12 @@ tolera un 429 y reintenta con backoff en vez de tirar la vista.
   en especificidad (0,1,0), que le gana a los selectores de elemento de Webflow
   (0,0,1) pero empata con las clases de componente, que por venir después siempre
   ganan. Con `.sc-app p` (0,1,1) el reset le pisaría los estilos a `.sc-hint`.
-- **La URL del backend está duplicada a propósito** en `head.html` y como default
-  en `api.js`. Si alguien pega solo el embed y se olvida del `<head>`, la app
-  funciona igual; un default a `localhost` fallaría por mixed content con un error
-  que no dice nada.
+- **Ningún texto que ve el usuario menciona el servidor.** Los mensajes de error
+  hablan de "el servicio de análisis", no de una IP ni de nombres de variables de
+  entorno; el detalle técnico (URL, causa) va a `console.error`, que es donde le
+  sirve a quien lo deployó. Lo único que sigue expuesto es el host en los `href`
+  de export y en el link de compartir, que es funcional y se resuelve poniéndole
+  un dominio propio al backend.
 - **El embed muestra un placeholder y un error si el CDN falla.** `mount()` limpia
   el contenedor recién cuando tiene algo con qué reemplazarlo, así no hay un hueco
   en blanco mientras carga.

@@ -1,85 +1,77 @@
 <!doctype html>
+<!--
+  ============================================================================
+  ESTE ARCHIVO NO SE DESPLIEGA. Es solo para desarrollo local.
+  ============================================================================
+
+  Usa rutas relativas (./src/app.js) que en Webflow no resuelven a nada.
+  Si lo pegas ahi, la app no carga.
+
+  Para Webflow: pega webflow/embed.html y nada mas.
+
+  Uso local:  python -m http.server 5173 --bind 127.0.0.1
+              http://localhost:5173
+  Otro backend:  http://localhost:5173/?api=http://localhost:8000
+  ============================================================================
+-->
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SmartCheck — dev local</title>
+    <title>SmartCheck</title>
 
-    <!--
-      Harness de desarrollo local. NO se despliega: replica lo que hace Webflow
-      con los snippets de webflow/ para poder iterar sin publicar cada cambio.
-
-      Uso:  python -m http.server 3000     (desde la raiz del repo)
-            http://localhost:3000
-    -->
     <script>
-      // En Webflow esto sale de webflow/head.html.
-      // Aca se puede apuntar a otro backend por query string sin editar nada:
-      //   http://localhost:5173/?api=http://localhost:8000
-      var BACKEND_DESPLEGADO = "https://138.197.155.202.sslip.io";
-      window.SMARTCHECK_API =
-        new URLSearchParams(location.search).get("api") || BACKEND_DESPLEGADO;
+      // En Webflow esto no hace falta: src/api.js ya trae el backend por default.
+      var apiOverride = new URLSearchParams(location.search).get("api");
+      if (apiOverride) window.SMARTCHECK_API = apiOverride;
     </script>
 
     <link rel="stylesheet" href="./src/app.css" />
     <style>
       body {
         margin: 0;
-        padding: 40px 20px;
+        padding: 48px 20px;
         font-family:
           system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background: #fff;
         color: #0f172a;
       }
-      .dev-header {
+      .page-head {
         max-width: 980px;
-        margin: 0 auto 28px;
+        margin: 0 auto 32px;
       }
-      .dev-header h1 {
-        margin: 0 0 6px;
-        font-size: 1.75rem;
+      .page-head h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+        letter-spacing: -0.02em;
       }
-      .dev-header p {
+      .page-head p {
         margin: 0;
+        max-width: 62ch;
         color: #64748b;
-      }
-      .dev-badge {
-        display: inline-block;
-        margin-bottom: 14px;
-        padding: 3px 10px;
-        border-radius: 999px;
-        background: #fef3c7;
-        color: #92400e;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
+        line-height: 1.6;
       }
       @media (prefers-color-scheme: dark) {
         body {
           background: #0f172a;
           color: #f1f5f9;
         }
-        .dev-header p {
+        .page-head p {
           color: #94a3b8;
         }
       }
     </style>
   </head>
   <body>
-    <div class="dev-header">
-      <span class="dev-badge">dev local</span>
+    <div class="page-head">
       <h1>SmartCheck</h1>
       <p>
-        Auditor de contratos Solidity mapeado al OWASP Smart Contract Security
-        Top 10. En Webflow esta página la reemplaza tu diseño; lo único que se
-        pega ahí es el div y el script.
+        Auditá un contrato Solidity contra las 10 categorías del OWASP Smart
+        Contract Security Top 10. Pegá una dirección de testnet o el código
+        fuente, y recibí un checklist en lenguaje claro con la línea exacta de
+        cada hallazgo.
       </p>
-      <p>Backend: <code id="dev-api"></code></p>
     </div>
-
-    <script>
-      document.getElementById("dev-api").textContent = window.SMARTCHECK_API;
-    </script>
 
     <div id="smartcheck-app"></div>
 

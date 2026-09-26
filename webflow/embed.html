@@ -1,24 +1,24 @@
 <!--
-  SmartCheck — snippet para el body de la pagina
+  ============================================================================
+  SmartCheck — ESTO ES LO UNICO QUE HAY QUE PEGAR EN WEBFLOW
   ============================================================================
 
-  DONDE: arrastra un elemento "Embed" (Add panel > Components > Embed) al lugar
-         de la pagina donde quieras la app, y pega TODO esto adentro.
+  DONDE: Add panel > Components > Embed. Arrastralo donde quieras la app y pega
+         todo este bloque adentro.
 
-  No hay nada que reemplazar: el repo y la URL del backend ya vienen puestos.
+  NO hay nada que reemplazar y NO hay que pegar nada en el <head>: este snippet
+  carga sus propios estilos.
 
-  Requiere que tambien pegues webflow/head.html en
-  Page Settings > Custom Code > Inside <head> tag (ahi van los estilos).
+  NO pegues index.html del repo — ese archivo es solo para desarrollo local y
+  usa rutas relativas que en Webflow no resuelven.
 
   ---------------------------------------------------------------------------
-  Sobre la version fijada (@v0.1.1)
+  Version fijada a proposito (@v0.1.2)
 
-  Se usa un tag y no @main a proposito: jsDelivr cachea un branch hasta 12h, asi
-  que con @main los cambios aparecen en un momento impredecible — lo peor posible
-  para una demo. Con un tag sabes exactamente que codigo se esta sirviendo.
-
-  Para publicar cambios: desde el repo, `git tag v0.1.2 && git push origin v0.1.2`
-  y cambias el numero en las dos URLs (aca y en head.html).
+  jsDelivr cachea un branch hasta 12h, asi que con @main los cambios aparecen
+  en un momento impredecible. Con un tag sabes exactamente que se esta sirviendo.
+  Para publicar cambios: `git tag v0.1.3 && git push origin v0.1.3` y cambias el
+  numero en las dos URLs de abajo.
   ---------------------------------------------------------------------------
 -->
 
@@ -27,17 +27,33 @@
 </div>
 
 <script type="module">
+  const VERSION = "v0.1.2";
+  const BASE = `https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@${VERSION}/src`;
   const MOUNT = "#smartcheck-app";
-  const SRC =
-    "https://cdn.jsdelivr.net/gh/hernan2292/smartcheck@v0.1.1/src/app.js";
+
+  /** Carga el stylesheet y espera a que este listo, para que no haya un flash sin estilos. */
+  function loadStyles(href) {
+    return new Promise((resolve) => {
+      if (document.querySelector(`link[href="${href}"]`)) return resolve();
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      link.onload = resolve;
+      // Si el CSS no carga, mejor mostrar la app sin estilo que no mostrarla.
+      link.onerror = resolve;
+      document.head.appendChild(link);
+      setTimeout(resolve, 3000);
+    });
+  }
 
   try {
-    const { mount } = await import(SRC);
+    await loadStyles(`${BASE}/app.css`);
+    const { mount } = await import(`${BASE}/app.js`);
     await mount(MOUNT);
   } catch (error) {
     // Sin esto, si el modulo no carga (CDN caido, red del visitante, un
     // bloqueador) el visitante ve un div vacio y no hay forma de saber por que.
-    console.error("[smartcheck] no se pudo cargar", SRC, error);
+    console.error("[smartcheck] no se pudo cargar desde", BASE, error);
     const node = document.querySelector(MOUNT);
     if (node) {
       node.textContent = "";
@@ -45,8 +61,7 @@
       msg.style.cssText =
         "padding:14px 16px;border-radius:10px;background:#f8fafc;" +
         "border-left:4px solid #dc2626;color:#0f172a;font-size:0.9375rem";
-      msg.textContent =
-        "No se pudo cargar el auditor. Probá recargando la página.";
+      msg.textContent = "No se pudo cargar el auditor. Probá recargando la página.";
       node.appendChild(msg);
     }
   }

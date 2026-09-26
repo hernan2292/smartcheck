@@ -32,10 +32,14 @@ async function request(path, options = {}) {
       ...options,
     });
   } catch (cause) {
-    // fetch solo rechaza por red/CORS, nunca por status HTTP
+    // fetch solo rechaza por red/CORS, nunca por status HTTP.
+    // El detalle tecnico (URL, causa) va a la consola, no al mensaje que ve el
+    // usuario: la URL del servidor y los nombres de variables de entorno no le
+    // sirven a nadie que no sea quien lo deployo.
+    console.error(`[smartcheck] no se pudo contactar ${apiBase()}${path}`, cause);
     throw new ApiError(
-      `No se pudo contactar el backend en ${apiBase()}. ` +
-        "Verificá que este corriendo y que CORS_ORIGINS incluya este dominio.",
+      "No se pudo conectar con el servicio de análisis. " +
+        "Puede estar momentáneamente fuera de servicio; probá de nuevo en un rato.",
       0,
     );
   }
