@@ -235,6 +235,64 @@
   color: var(--sc-muted);
 }
 
+/* --- Ejemplos ------------------------------------------------------------ */
+
+.sc-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sc-examples-label {
+  font-size: 0.8125rem;
+  color: var(--sc-muted);
+}
+
+.sc-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.sc-chip:hover {
+  border-color: var(--sc-accent);
+  color: var(--sc-accent);
+}
+
+.sc-chip:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+
+.sc-chip strong {
+  font-weight: 600;
+}
+
+.sc-chip-detail {
+  color: var(--sc-muted);
+  font-size: 0.75rem;
+}
+
+.sc-chip:hover .sc-chip-detail {
+  color: inherit;
+}
+
+@media (max-width: 560px) {
+  .sc-chip-detail {
+    display: none;
+  }
+}
+
 /* --- Estados ------------------------------------------------------------- */
 
 .sc-alert {

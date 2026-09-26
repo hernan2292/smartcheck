@@ -120,6 +120,7 @@ function renderForm(networks) {
           netSelect("sc-network-address"),
           el("button", { class: "sc-btn", type: "submit", text: "Auditar" }),
         ]),
+        renderExamples(),
         el("p", {
           class: "sc-hint",
           text:
@@ -174,6 +175,51 @@ function renderForm(networks) {
     }),
 
     el("div", { id: "sc-output", "aria-live": "polite" }),
+  ]);
+}
+
+/**
+ * Contratos reales de Sepolia, verificados en Sourcify, para probar sin tener
+ * que buscar una address. Se eligieron por ser conocidos y por cubrir tres
+ * versiones muy distintas de Solidity (0.4 / 0.5 / 0.7), que es justo donde el
+ * analisis se rompia antes.
+ */
+const EJEMPLOS = [
+  {
+    label: "WETH9",
+    detalle: "Wrapped Ether · solc 0.4.19",
+    address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+  },
+  {
+    label: "LINK",
+    detalle: "Chainlink Token · solc 0.7.6",
+    address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+  },
+  {
+    label: "UNI",
+    detalle: "Uniswap Token · solc 0.5.16",
+    address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+  },
+];
+
+function renderExamples() {
+  return el("div", { class: "sc-examples" }, [
+    el("span", { class: "sc-examples-label", text: "Probá con un contrato real:" }),
+    ...EJEMPLOS.map((ej) =>
+      el("button", {
+        class: "sc-chip",
+        type: "button",
+        title: `${ej.detalle} — ${ej.address}`,
+        onclick: () => {
+          $("#sc-address").value = ej.address;
+          $("#sc-network-address").value = "sepolia";
+          $("#sc-address").focus();
+        },
+      }, [
+        el("strong", { text: ej.label }),
+        el("span", { class: "sc-chip-detail", text: ej.detalle }),
+      ]),
+    ),
   ]);
 }
 
