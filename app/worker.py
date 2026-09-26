@@ -58,19 +58,32 @@ def _run_audit(audit_id: str) -> None:
 
     try:
         # 1. Conseguir el codigo fuente
+        solc_version = None
+        declared_name = None
         if audit["source_type"] == "verified":
-            files, origin = sources.fetch_verified_source(
-                audit["address"], audit["network"]
+            verified = sources.fetch_verified_source(audit["address"], audit["network"])
+            files = verified.files
+            solc_version = verified.compiler_version
+            declared_name = verified.contract_name
+            log.info(
+                "Audit %s: source desde %s (%d archivos, solc %s, contrato %s, match %s)",
+                audit_id, verified.origin, len(files), solc_version,
+                declared_name, verified.match,
             )
-            log.info("Audit %s: source desde %s (%d archivos)", audit_id, origin, len(files))
+            for aviso in verified.warnings:
+                log.info("Audit %s: %s", audit_id, aviso)
             db.update_audit(
                 audit_id, source_code="\n\n".join(files.values())[: config.MAX_SOURCE_BYTES]
             )
         else:
             files = {"Contract.sol": audit["source_code"] or ""}
 
-        # 2. Correr Slither
-        raw_output, contract_name = analyzer.run_slither(files)
+        # 2. Correr Slither. Cuando la fuente de verificacion reporta la version
+        # exacta de solc y el nombre del contrato, se usan: son datos duros, no
+        # inferencias del pragma ni heuristicas de tamaño de archivo.
+        raw_output, contract_name = analyzer.run_slither(
+            files, solc_version=solc_version, contract_name=declared_name
+        )
 
         # 3. Mapear a las 10 categorias OWASP
         checklist = build_checklist(raw_output)
