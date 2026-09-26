@@ -37,7 +37,8 @@ DEFAULT_SOLC = os.getenv("DEFAULT_SOLC", "0.8.26")
 MAX_SOURCE_BYTES = int(os.getenv("MAX_SOURCE_BYTES", str(1_000_000)))
 
 # --- Fuentes de codigo verificado -------------------------------------------
-SOURCIFY_BASE = os.getenv("SOURCIFY_BASE", "https://sourcify.dev/server")
+# El endpoint viejo (/repository/contracts/...) esta muerto: 404 para todo.
+SOURCIFY_V2 = os.getenv("SOURCIFY_V2", "https://sourcify.dev/server/v2")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "")
 ETHERSCAN_BASE = os.getenv("ETHERSCAN_BASE", "https://api.etherscan.io/v2/api")
 HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "30"))

@@ -344,19 +344,49 @@ def _explain_failure(
     )
 
 
-def _pick_target(root: Path, sources: dict[str, str]) -> Path:
-    """Elige el archivo a analizar: el mas grande que no sea una dependencia."""
-    candidates = [
+def _pick_target(
+    root: Path, sources: dict[str, str], contract_name: str | None = None
+) -> Path:
+    """Elige el archivo a analizar.
+
+    Si sabemos el nombre del contrato (Sourcify lo devuelve), buscamos el archivo
+    que lo declara: es mucho mas confiable que la heuristica de tamaño. En un
+    proyecto como LinkToken, con 14 archivos, el mas grande es una dependencia.
+    """
+    no_deps = [
         p for p in sources
         if not any(dep in p.lower() for dep in ("openzeppelin", "node_modules", "lib/", "@"))
     ]
-    pool = candidates or list(sources)
+    pool = no_deps or list(sources)
+
+    if contract_name:
+        declaracion = re.compile(
+            rf"\b(?:contract|library|interface)\s+{re.escape(contract_name)}\b"
+        )
+        exactos = [p for p in pool if declaracion.search(sources[p])]
+        if exactos:
+            # Si varios lo declaran, el archivo que se llama igual gana
+            por_nombre = [p for p in exactos if Path(p).stem == contract_name]
+            elegido = (por_nombre or exactos)[0]
+            log.info("Target por nombre de contrato %r: %s", contract_name, elegido)
+            return root / elegido
+        log.info("No se encontro la declaracion de %r, cayendo a heuristica", contract_name)
+
     target = max(pool, key=lambda p: len(sources[p]))
     return root / target
 
 
-def run_slither(sources: dict[str, str]) -> tuple[dict, str]:
-    """Corre Slither sobre los sources. Devuelve (json_crudo, nombre_contrato)."""
+def run_slither(
+    sources: dict[str, str],
+    solc_version: str | None = None,
+    contract_name: str | None = None,
+) -> tuple[dict, str]:
+    """Corre Slither sobre los sources. Devuelve (json_crudo, nombre_contrato).
+
+    `solc_version` es la version exacta que reporto la fuente de verificacion.
+    Tiene prioridad sobre inferirla del pragma: un pragma `^0.4.19` admite
+    cualquier 0.4.x, pero el contrato se compilo con una sola.
+    """
     if not sources:
         raise AnalysisError("No hay codigo fuente para analizar")
 
@@ -367,7 +397,11 @@ def run_slither(sources: dict[str, str]) -> tuple[dict, str]:
             f"({total // 1000}KB recibidos)"
         )
 
-    version = ensure_solc(resolve_solc_version(detect_solc_range(sources)))
+    if solc_version:
+        log.info("Usando la version de solc que reporto la fuente: %s", solc_version)
+        version = ensure_solc(solc_version)
+    else:
+        version = ensure_solc(resolve_solc_version(detect_solc_range(sources)))
 
     with tempfile.TemporaryDirectory(prefix="smartcheck-") as tmp:
         root = Path(tmp)
@@ -379,7 +413,7 @@ def run_slither(sources: dict[str, str]) -> tuple[dict, str]:
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(code, encoding="utf-8")
 
-        target = _pick_target(root, sources)
+        target = _pick_target(root, sources, contract_name)
         cmd = [
             _find_executable("slither"), str(target.relative_to(root)),
             "--json", "-",
